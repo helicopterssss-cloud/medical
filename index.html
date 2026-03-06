@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>醫學報告排版助手 2.1</title>
+    <title>醫學報告排版助手 2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .btn-action { @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium active:scale-95; }
@@ -22,11 +22,11 @@
     <div class="max-w-7xl mx-auto px-4 py-6">
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">醫學報告排版助手 <span class="text-blue-600">2.1</span></h1>
+                <h1 class="text-2xl font-bold text-slate-800">醫學報告排版助手 <span class="text-blue-600">2.2</span></h1>
                 <p class="text-slate-500 text-sm mt-1">專為臨床醫師設計的文字處理工具</p>
             </div>
             <div class="flex gap-2">
-                <button id="copyBtn" onclick="copyToClipboard()" class="btn-action flex items-center gap-2 bg-blue-600">
+                <button id="copyBtn" onclick="copyToClipboard()" class="btn-action flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
@@ -64,7 +64,7 @@
                                 <option value="5" selected>間隔 5 行</option>
                                 <option value="8">間隔 8 行</option>
                             </select>
-                            <button onclick="NewLine()" class="btn-action">插入日期</button>
+                            <button onclick="NewLine()" class="btn-action">批次插入日期</button>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -80,12 +80,25 @@
                         <button onclick="CapFun()" class="w-full btn-secondary">首字大寫/其餘小寫</button>
                     </div>
                 </section>
+
+                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <h3 class="text-xs font-bold text-blue-700 mb-2">快捷鍵提示</h3>
+                    <ul class="text-xs text-blue-600 space-y-1">
+                        <li>• <b>Alt</b>: 全文右移縮排</li>
+                        <li>• <b>Shift + Alt</b>: 全文左移縮排</li>
+                    </ul>
+                </div>
             </div>
 
             <div class="lg:col-span-8 xl:col-span-9">
                 <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
                     <div class="bg-slate-800 px-4 py-2 flex justify-between items-center text-slate-400">
-                        <span class="text-xs font-mono">EDITOR / INPUT</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-mono text-white/70">EDITOR</span>
+                            <button onclick="insertCurrentDate()" class="text-[10px] bg-slate-700 hover:bg-blue-600 text-white px-2 py-0.5 rounded transition-colors border border-slate-600">
+                                📅 插入今日日期：<span id="displayDate"></span>
+                            </button>
+                        </div>
                         <span id="charCount" class="text-xs">0 字元</span>
                     </div>
                     <textarea id="inputtext" 
@@ -102,6 +115,27 @@
     <script>
         const textarea = document.getElementById('inputtext');
 
+        // 更新右上角顯示的日期
+        function updateDisplayDate() {
+            const d = new Date();
+            const dateStr = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+            document.getElementById('displayDate').innerText = dateStr;
+        }
+        updateDisplayDate();
+
+        // 在游標處插入日期
+        function insertCurrentDate() {
+            const d = new Date();
+            const dateStr = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            textarea.value = text.substring(0, start) + dateStr + text.substring(end);
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + dateStr.length;
+            updateCharCount();
+        }
+
         function updateCharCount() {
             document.getElementById('charCount').innerText = textarea.value.length + " 字元";
         }
@@ -113,73 +147,47 @@
             }
         }
 
-        // --- 強化後的複製功能 ---
         async function copyToClipboard() {
             const content = textarea.value;
-            if (!content) {
-                alert('沒有內容可以複製');
-                return;
-            }
-
+            if (!content) return;
             const btn = document.getElementById('copyBtn');
             const originalHTML = btn.innerHTML;
-
             try {
-                // 使用現代 Clipboard API
                 await navigator.clipboard.writeText(content);
                 btn.innerHTML = '✅ 已複製！';
-                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                btn.classList.add('bg-green-600');
             } catch (err) {
-                // 備用方案：傳統 execCommand
                 textarea.select();
-                try {
-                    document.execCommand('copy');
-                    btn.innerHTML = '✅ 已複製！';
-                } catch (secondaryErr) {
-                    alert('複製失敗，請手動全選複製');
-                }
+                document.execCommand('copy');
+                btn.innerHTML = '✅ 已複製！';
             }
-
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
-                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                btn.classList.remove('bg-green-600');
             }, 2000);
         }
 
-        // --- 新增功能邏輯 ---
-
-        // 1. 空白鍵變成 → (針對連續空格也有效)
         function spaceToArrow() {
-            // 將兩個以上的空格或單個空格替換為 ->
             textarea.value = textarea.value.replace(/ +/g, ' -> ');
             updateCharCount();
         }
 
-        // 2. 行首依序加入數字
         function addNumbering() {
             const lines = textarea.value.split('\n');
             let count = 1;
             textarea.value = lines.map(line => {
-                if (line.trim().length > 0) {
-                    return `${count++}. ${line}`;
-                }
-                return line; // 空行不編號
+                if (line.trim().length > 0) return `${count++}. ${line}`;
+                return line;
             }).join('\n');
             updateCharCount();
         }
 
-        // --- 原有排版邏輯 ---
-
         function myFunction() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.includes('----------------') ? '' : line)
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.includes('----------------') ? '' : line).join('\n');
         }
 
         function impactFun() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.replace(/ +(?= )/g, ''))
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.replace(/ +(?= )/g, '')).join('\n');
         }
 
         function impactlineFun() {
@@ -187,27 +195,19 @@
         }
 
         function FirstCharFun() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.length > 0 ? line.slice(1) : line)
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.length > 0 ? line.slice(1) : line).join('\n');
         }
 
         function LastCharFun() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.length > 0 ? line.slice(0, -1) : line)
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.length > 0 ? line.slice(0, -1) : line).join('\n');
         }
 
         function dotFun() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.trim() ? '.' + line : line)
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.trim() ? '.' + line : line).join('\n');
         }
 
         function arrFun() {
-            textarea.value = textarea.value.split('\n')
-                .map(line => line.trim() ? '>' + line : line)
-                .join('\n');
+            textarea.value = textarea.value.split('\n').map(line => line.trim() ? '>' + line : line).join('\n');
         }
 
         function CapFun() {
@@ -236,41 +236,26 @@
             str = str.replace(/＜檢查目的及病程摘要＞(.*?)＜P＞/mg, "");
             str = str.replace(/＜A＞(.*?)＜P＞/mg, "");
             str = str.replace(/@@/g, "\n");
-            
             const filters = ["收件號", "床號：", "放射師："];
-            textarea.value = str.split('\n')
-                .filter(line => !filters.some(f => line.includes(f)))
-                .join('\n');
+            textarea.value = str.split('\n').filter(line => !filters.some(f => line.includes(f))).join('\n');
             impactlineFun();
         }
 
         function Lab() {
             const labMap = [
-                { key: "WBC:1000/uL", nick: "WBC" },
-                { key: "Hemoglobin:g/dL", nick: "HB" },
-                { key: "Platelets:1000/uL", nick: "PLT" },
-                { key: "BUN (B):mg/dL", nick: "BUN" },
-                { key: "Creatinine(B):mg/dL", nick: "Cr" },
-                { key: "Na:mEq/L", nick: "Na" },
-                { key: "K:mEq/L", nick: "K" },
-                { key: "CRP:mg/L", nick: "CRP" },
-                { key: "Troponin-I:ng/mL", nick: "Trp-I" },
-                { key: "Total Bilirubin:mg/dL", nick: "T-bil" },
-                { key: "ALT/GPT:U/L", nick: "ALT" },
-                { key: "AST/GOT:U/L", nick: "AST" },
-                { key: "Hb-A1c:%", nick: "A1c" },
-                { key: "LDL-C(direct):mg/dL", nick: "LDL" },
-                { key: "Triglyceride:mg/dL", nick: "TG" },
-                { key: "Free-T4:ng/dL", nick: "FT4" },
-                { key: "T3:ng/dL", nick: "T3" },
-                { key: "TSH:uIU/mL", nick: "TSH" },
-                { key: "Cortisol:ug/dL", nick: "Cortisol" },
-                { key: "BNP:pg/mL", nick: "BNP" }
+                { key: "WBC:1000/uL", nick: "WBC" }, { key: "Hemoglobin:g/dL", nick: "HB" },
+                { key: "Platelets:1000/uL", nick: "PLT" }, { key: "BUN (B):mg/dL", nick: "BUN" },
+                { key: "Creatinine(B):mg/dL", nick: "Cr" }, { key: "Na:mEq/L", nick: "Na" },
+                { key: "K:mEq/L", nick: "K" }, { key: "CRP:mg/L", nick: "CRP" },
+                { key: "Troponin-I:ng/mL", nick: "Trp-I" }, { key: "Total Bilirubin:mg/dL", nick: "T-bil" },
+                { key: "ALT/GPT:U/L", nick: "ALT" }, { key: "AST/GOT:U/L", nick: "AST" },
+                { key: "Hb-A1c:%", nick: "A1c" }, { key: "LDL-C(direct):mg/dL", nick: "LDL" },
+                { key: "Triglyceride:mg/dL", nick: "TG" }, { key: "Free-T4:ng/dL", nick: "FT4" },
+                { key: "T3:ng/dL", nick: "T3" }, { key: "TSH:uIU/mL", nick: "TSH" },
+                { key: "Cortisol:ug/dL", nick: "Cortisol" }, { key: "BNP:pg/mL", nick: "BNP" }
             ];
-
             let results = {};
             const lines = textarea.value.split('\n');
-
             lines.forEach(line => {
                 labMap.forEach(lab => {
                     if (line.includes(lab.key)) {
@@ -283,9 +268,7 @@
                     }
                 });
             });
-
-            const output = Object.values(results).join('\n');
-            textarea.value = output ? output : "未偵測到符合格式的 Lab 數據";
+            textarea.value = Object.values(results).join('\n') || "未偵測到符合格式的 Lab 數據";
             updateCharCount();
         }
 
