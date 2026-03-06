@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>醫學報告排版助手 2.0</title>
+    <title>醫學報告排版助手 2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 自定義按鈕樣式 */
         .btn-action { @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium active:scale-95; }
         .btn-secondary { @apply px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-all shadow-sm text-sm border border-gray-300 active:scale-95; }
         .btn-medical { @apply px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all shadow-sm text-sm font-medium active:scale-95; }
         .btn-danger { @apply px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all shadow-sm text-sm border border-red-200 active:scale-95; }
+        .btn-orange { @apply px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-sm text-sm font-medium active:scale-95; }
         
-        /* 隱藏滾動條但保持功能 */
         textarea::-webkit-scrollbar { width: 8px; }
         textarea::-webkit-scrollbar-track { background: #f1f1f1; }
         textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 font-sans">
@@ -24,13 +22,13 @@
     <div class="max-w-7xl mx-auto px-4 py-6">
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">醫學報告排版助手 <span class="text-blue-600">2.0</span></h1>
+                <h1 class="text-2xl font-bold text-slate-800">醫學報告排版助手 <span class="text-blue-600">2.1</span></h1>
                 <p class="text-slate-500 text-sm mt-1">專為臨床醫師設計的文字處理工具</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="copyToClipboard()" class="btn-secondary flex items-center gap-2">
+                <button id="copyBtn" onclick="copyToClipboard()" class="btn-action flex items-center gap-2 bg-blue-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="Integrity 8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     複製結果
                 </button>
@@ -49,6 +47,8 @@
                     <div class="flex flex-col gap-3">
                         <button onclick="Lab()" class="btn-medical w-full">Lab 數據趨勢化</button>
                         <button onclick="removeXray()" class="btn-medical w-full bg-indigo-600 hover:bg-indigo-700">X-Ray 報告去雜訊</button>
+                        <button onclick="spaceToArrow()" class="btn-orange w-full">空格轉箭頭 (→)</button>
+                        <button onclick="addNumbering()" class="btn-orange w-full bg-orange-600">行首依序加數字</button>
                     </div>
                 </section>
 
@@ -56,10 +56,9 @@
                     <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <span class="w-2 h-2 bg-blue-500 rounded-full"></span> 通用排版
                     </h2>
-                    
                     <div class="space-y-4">
                         <div class="flex items-center gap-2">
-                            <select id="sel_NewLine" class="flex-1 bg-slate-50 border border-slate-300 text-sm rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select id="sel_NewLine" class="flex-1 bg-slate-50 border border-slate-300 text-sm rounded-lg p-2 focus:ring-blue-500">
                                 <option value="1">間隔 1 行</option>
                                 <option value="2">間隔 2 行</option>
                                 <option value="5" selected>間隔 5 行</option>
@@ -81,14 +80,6 @@
                         <button onclick="CapFun()" class="w-full btn-secondary">首字大寫/其餘小寫</button>
                     </div>
                 </section>
-
-                <div class="p-4 bg-blue-50 rounded-xl">
-                    <h3 class="text-xs font-bold text-blue-700 mb-2">快捷鍵提示</h3>
-                    <ul class="text-xs text-blue-600 space-y-1">
-                        <li>• <b>Alt</b>: 全文右移縮排</li>
-                        <li>• <b>Shift + Alt</b>: 全文左移縮排</li>
-                    </ul>
-                </div>
             </div>
 
             <div class="lg:col-span-8 xl:col-span-9">
@@ -122,19 +113,62 @@
             }
         }
 
+        // --- 強化後的複製功能 ---
         async function copyToClipboard() {
-            try {
-                await navigator.clipboard.writeText(textarea.value);
-                const btn = event.currentTarget;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '已複製！';
-                setTimeout(() => btn.innerHTML = originalText, 2000);
-            } catch (err) {
-                alert('複製失敗，請手動全選複製');
+            const content = textarea.value;
+            if (!content) {
+                alert('沒有內容可以複製');
+                return;
             }
+
+            const btn = document.getElementById('copyBtn');
+            const originalHTML = btn.innerHTML;
+
+            try {
+                // 使用現代 Clipboard API
+                await navigator.clipboard.writeText(content);
+                btn.innerHTML = '✅ 已複製！';
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+            } catch (err) {
+                // 備用方案：傳統 execCommand
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.innerHTML = '✅ 已複製！';
+                } catch (secondaryErr) {
+                    alert('複製失敗，請手動全選複製');
+                }
+            }
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+            }, 2000);
         }
 
-        // --- 排版邏輯 ---
+        // --- 新增功能邏輯 ---
+
+        // 1. 空白鍵變成 → (針對連續空格也有效)
+        function spaceToArrow() {
+            // 將兩個以上的空格或單個空格替換為 ->
+            textarea.value = textarea.value.replace(/ +/g, ' -> ');
+            updateCharCount();
+        }
+
+        // 2. 行首依序加入數字
+        function addNumbering() {
+            const lines = textarea.value.split('\n');
+            let count = 1;
+            textarea.value = lines.map(line => {
+                if (line.trim().length > 0) {
+                    return `${count++}. ${line}`;
+                }
+                return line; // 空行不編號
+            }).join('\n');
+            updateCharCount();
+        }
+
+        // --- 原有排版邏輯 ---
 
         function myFunction() {
             textarea.value = textarea.value.split('\n')
@@ -149,7 +183,6 @@
         }
 
         function impactlineFun() {
-            // 壓縮連續多個換行為單個換行
             textarea.value = textarea.value.replace(/\n\s*\n/g, '\n');
         }
 
@@ -242,7 +275,6 @@
                 labMap.forEach(lab => {
                     if (line.includes(lab.key)) {
                         let values = line.replace(lab.key, '').trim();
-                        // 提取數字部分（包含小數點與負號）
                         let formattedVal = values.match(/[-+]?([0-9]*\.[0-9]+|[0-9]+)/g);
                         if (formattedVal) {
                             let valStr = formattedVal.join('->');
@@ -257,7 +289,6 @@
             updateCharCount();
         }
 
-        // 快捷鍵處理：Alt (右移 3 格), Shift + Alt (左移 3 格)
         function handleKeyDown(e) {
             if (e.altKey) {
                 e.preventDefault();
